@@ -15,7 +15,7 @@ import { HoursToMs, Timer } from './Time';
 import messaging from '@react-native-firebase/messaging';
 import db from '@react-native-firebase/database';
 
-import { SupG5, FastCameraView, GoodOlCamera, SupG4 } from './Camera';
+import { SupG5, FastCameraView, GoodOlCamera, SupG4, imageSize } from './Camera';
 
 
 const cameraPictureSize = {
@@ -81,20 +81,6 @@ const options2 = {
   mediaType: 'photo',
   cropping: true
 };
-const options3 = {
-  includeBase64: true,
-  compressImageMaxHeight: Dimensions.get('screen').width - 32,
-  compressImageMaxWidth: Dimensions.get('screen').height - 32
-}
-const options4 = {
-  width: Dimensions.get('screen').width - 32,
-  height: Dimensions.get('screen').height - 128,
-  fixOrientation: true,
-  base64: true,
-  doNotSave: true,
-  quality: 0.2
-};
-
 const placeHolder = require('./assets/picture_place_holder.png');
 
 // APP VAR??? ----------------------------
@@ -252,6 +238,14 @@ async function LoadLocalData() {
   console.log("Image:", IMAGE);
   console.log("QrCode:", "QRCode is a longAssString");
   console.log("------------------------------------")
+}
+
+async function InitialiseListeners() {
+  if (EVENTS.length > 0) {
+    EVENTS.forEach(event => {
+      LISTENERS[event.eventID] = db().ref('/Events/' + event.eventID).on()
+    })
+  }
 }
 
 function AddFriend(name, userID, image) {
@@ -486,8 +480,23 @@ function RemoveLiveChatListener() {
   LIVECHATLISTENER = null;
 }
 
-// TEST FUN
-
+// Nice component
+Nice = (props) => {
+  console.log(props);
+  if (props.item.photo) {
+    return (
+      <Image source={{ uri: props.item.photo }} style={{ height: imageSize.height, width: imageSize.width }} resizeMode={'stretch'} />
+    )
+  } else if (props.item.photoLoop) {
+    return (
+      <SupG4 images={props.item.photoLoop} />
+    )
+  } else {
+    return (
+      <View style={{ display: 'none' }} />
+    )
+  }
+}
 
 
 // APPLICATION ---------------------------
@@ -601,58 +610,32 @@ export default class App extends Component {
   }
   // ITEMS --- Views are usually made of items
   messageItem = (item) => {
-    if (item.photo) {
-      return (
-        <View style={[{ flex: 1, paddingLeft: 16, paddingTop: 16, width: cameraPictureSize.width }, item.messageID == CURRENTCHAT[CURRENTCHAT.length - 1].messageID ? { paddingBottom: 16 } : null]}>
-          <View style={{ flexDirection: 'row', height: 25, backgroundColor: '#f9c2ff' }}>
-            <Image source={{ uri: item.sender.image }} style={{ height: 25, width: 25 }} />
-            <Text style={{ paddingLeft: 6, fontFamily: 'sans-serif-medium' }}>{item.sender.name}</Text>
-          </View>
-          <View style={[item.text ? { backgroundColor: '#f7deef' } : { display: 'none' }]}>
-            <Text>
-              <Text style={{ padding: 3, fontFamily: 'sans-serif-medium', fontSize: 14 }}>{item.text}</Text>
-            </Text>
-          </View>
-          <Image source={{ uri: item.photo }} style={{ height: cameraPictureSize.height }} resizeMode='stretch' />
-        </View>
-      )
-    } else if (item.photoLoop) {
-      return (
-        <View style={
-          [{ flex: 1, paddingLeft: 16, paddingTop: 16, width: cameraPictureSize.width },
-          item.messageID == CURRENTCHAT[CURRENTCHAT.length - 1].messageID ? { paddingBottom: 16 } : null]
-        }>
-          <View style={{ flexDirection: 'row', height: 25, backgroundColor: '#f9c2ff' }}>
-            <Image source={{ uri: item.sender.image }} style={{ height: 25, width: 25 }} />
-            <Text style={{ paddingLeft: 6, fontFamily: 'sans-serif-medium' }}>{item.sender.name}</Text>
-          </View>
-          <View style={[item.text ? { backgroundColor: '#f7deef' } : { display: 'none' }]}>
-            <Text>
-              <Text style={{ padding: 3, fontFamily: 'sans-serif-medium', fontSize: 14 }}>{item.text}</Text>
-            </Text>
-          </View>
-          <SupG4 images={item.photoLoop} />
-        </View>
-      )
-    } else {
-      return (
-        <View style={[{ flex: 1, paddingLeft: 16, paddingTop: 16, width: cameraPictureSize.width }, item.messageID == CURRENTCHAT[CURRENTCHAT.length - 1].messageID ? { paddingBottom: 16 } : null]}>
-          <View style={{ flexDirection: 'row', height: 25, backgroundColor: '#f9c2ff' }}>
-            <Image source={{ uri: item.sender.image }} style={{ height: 25, width: 25 }} />
-            <Text style={{ paddingLeft: 6, fontFamily: 'sans-serif-medium' }}>{item.sender.name}</Text>
-          </View>
-          <View style={{ backgroundColor: '#f7deef' }}>
-            <Text>
-              <Text style={{ padding: 3, fontFamily: 'sans-serif-medium', fontSize: 14 }}>{item.text}</Text>
-            </Text>
-          </View>
-        </View>
-      )
-    }
-  }
-  down4FriendItem = (item) => {
     return (
-      <View style={{ marginVertical: 8, marginHorizontal: 16, backgroundColor: '#f9c2ff', flex: 1, flexDirection: 'row', borderColor: '#f9edf3', borderWidth: 1 }}>
+      <View style={[{ flex: 1, marginTop: 16, width: imageSize.width },
+      item.messageID == CURRENTCHAT[CURRENTCHAT.length - 1].messageID ? { marginBottom: 16 } : {},
+      item.sender.userID == USERID ? { flexDirection: 'row', alignSelf: 'flex-end', marginRight: 16 } : { marginLeft: 16 }]}>
+        <View style={{ flex: 1, flexDirection: 'column', width: imageSize.width }}>
+          <View style={{ flexDirection: 'row', height: 25, backgroundColor: '#f9c2ff' }}>
+            <Image source={{ uri: item.sender.image }} style={{ height: 25, width: 25 }} />
+            <Text style={{ paddingLeft: 6, fontFamily: 'sans-serif-medium' }}>{item.sender.name}</Text>
+          </View>
+          <View style={[item.text ? { backgroundColor: '#f7deef' } : { display: 'none' }]}>
+            <Text>
+              <Text style={{ padding: 3, fontFamily: 'sans-serif-medium', fontSize: 14 }}>{item.text}</Text>
+            </Text>
+          </View>
+          <Nice item={item} />
+        </View>
+      </View>
+    )
+  }
+  tmpFriendItem = (item) => {
+    return (
+      <View style={[
+        item.userID == TMPLIST[0].userID ?
+          { marginTop: 16, marginBottom: 8 } : item.userID == TMPLIST[TMPLIST.length - 1].userID ?
+            { marginTop: 8, marginBottom: 16 } : { marginVertical: 8 },
+        { marginHorizontal: 16, backgroundColor: '#f9c2ff', flex: 1, flexDirection: 'row', borderColor: '#f9edf3', borderWidth: 1 }]}>
         <Image style={{ width: 60, height: 60 }} source={require('./assets/hashirama.jpg')} />
         <View style={{ borderLeftWidth: 1, borderLeftColor: '#f9c2ff' }}>
           <Text style={{ fontSize: 15, fontFamily: 'sans-serif-medium', paddingLeft: 12, paddingTop: 12 }}>{item.name}</Text>
@@ -960,7 +943,7 @@ export default class App extends Component {
       <View style={styles.container}>
         <FlatList
           data={TMPLIST}
-          renderItem={({ item }) => { return this.down4FriendItem(item); }}
+          renderItem={({ item }) => { return this.tmpFriendItem(item); }}
           keyExtractor={({ userID }) => userID}
         />
         <View style={{ width: Dimensions.get('screen').width - 32, height: 40, borderTopWidth: 1, borderRightWidth: 1, borderLeftWidth: 1, alignSelf: 'center' }}>
@@ -1129,13 +1112,12 @@ export default class App extends Component {
     )
   }
   down4 = () => {
-
     return (
       <ScrollView style={styles.container}>
         <View>
           <FlatList
             data={TMPLIST}
-            renderItem={({ item }) => { return this.down4FriendItem(item); }}
+            renderItem={({ item }) => { return this.tmpFriendItem(item); }}
             keyExtractor={({ userID }) => userID}
           />
         </View>

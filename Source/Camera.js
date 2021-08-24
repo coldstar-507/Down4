@@ -27,7 +27,7 @@ const cameraPictureSize = {
     width: Dimensions.get('window').width / 1.5,
     height: Dimensions.get('window').height / 2
 };
-const imageSize = { // close to a perfect golden
+export const imageSize = { // close to a perfect golden
     height: 322,
     width: 199
 };
@@ -70,6 +70,7 @@ export class SupG4 extends Component {
         return (
             <FastImage
                 source={{ uri: item.uri }}
+                resizeMode={'stretch'}
                 style={
                     [{ height: imageSize.height, width: imageSize.width }, !this.allLoaded() ?
                         { opacity: 0 } :
